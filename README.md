@@ -4,16 +4,14 @@ This project is a Content Management System (CMS) developed using PHP, SQL. It p
 
 Features
 
-The dashboard includes the following sections:
-
-Users Management
+Users Management : 
 Manage user accounts, including creating, updating, and deleting user profiles, as well as assigning roles and permissions.
 
-Announcement Management
+Announcement Management : 
 Create and manage site-wide announcements, with the ability to update or delete existing ones.
 
-Resources Management
+Resources Management : 
 Upload, organize, and manage resources like documents, files, and links, making them available for users to access.
 
-Video Management
+Video Management : 
 Upload, organize, and manage videos, including setting titles, descriptions, and categorization.
