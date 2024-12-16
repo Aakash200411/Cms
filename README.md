@@ -5,7 +5,7 @@ This project is a Content Management System (CMS) developed using PHP, SQL. It p
 Features
 
 Users Management : 
-Manage user accounts, including creating, updating, and deleting user profiles, as well as assigning roles and permissions.
+Manage user accounts, including creating, updating, and deleting user profiles.
 
 Announcement Management : 
 Create and manage site-wide announcements, with the ability to update or delete existing ones.
