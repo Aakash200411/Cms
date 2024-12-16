@@ -1,7 +1,9 @@
 Content Management System (CMS)
+
 This project is a Content Management System (CMS) developed using PHP, SQL. It provides an easy-to-use dashboard for administrators to manage users, announcements, resources, and videos. The system is designed to streamline content management for web applications.
 
 Features
+
 The dashboard includes the following sections:
 
 Users Management
