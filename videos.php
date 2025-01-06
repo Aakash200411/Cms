@@ -6,13 +6,14 @@ secure();
 
 include('includes/header.php');
 
-// Handle file deletion
-if (isset($_GET['delete'])) {
+// Handle file deletion (only for admins)
+if (isset($_GET['delete']) && $_SESSION['role'] == 'admin') {
     $id = intval($_GET['delete']);
     $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
 
-    if ($conn->connect_error)
+    if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
+    }
 
     $stmt = $conn->prepare("DELETE FROM video_paths WHERE id = ?");
     $stmt->bind_param("i", $id);
@@ -32,7 +33,8 @@ if (isset($_GET['download'])) {
     $id = intval($_GET['download']);
     $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
 
-    if ($conn->connect_error) die("Connection failed: " . $conn->connect_error);
+    if ($conn->connect_error)
+        die("Connection failed: " . $conn->connect_error);
 
     $stmt = $conn->prepare("SELECT video_paths FROM video_paths WHERE id = ?");
     $stmt->bind_param("i", $id);
@@ -228,7 +230,14 @@ $result = $stmt->get_result();
                         <td><?php echo $row['uploaded_at']; ?></td>
                         <td>
                             <a href="videos.php?download=<?php echo $row['id']; ?>" class="btn btn-success">Download</a>
-                            <a href="videos.php?delete=<?php echo $row['id']; ?>" class="btn btn-danger">Delete</a>
+
+                            <?php if ($_SESSION['role'] == 'admin') { ?>
+                                <!-- Only admins can see the Delete button -->
+                                <a href="videos.php?delete=<?php echo $row['id']; ?>" class="btn btn-danger">Delete</a>
+                            <?php } else { ?>
+                                <!-- For regular users, you can hide the Delete button or disable it -->
+                                <span class="text-muted">Delete (Admin Only)</span>
+                            <?php } ?>
                         </td>
                     </tr>
                 <?php } ?>
