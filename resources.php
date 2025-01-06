@@ -6,8 +6,8 @@ secure(); // Ensure the user is authenticated
 
 include('includes/header.php');
 
-// Handle file deletion
-if (isset($_GET['delete'])) {
+// Handle file deletion (only for admin users)
+if (isset($_GET['delete']) && $_SESSION['role'] == 'admin') {
     $id = intval($_GET['delete']);
     $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
 
@@ -27,12 +27,13 @@ if (isset($_GET['delete'])) {
     }
 }
 
-// Handle file download
+// Handle file download (accessible to all users)
 if (isset($_GET['download'])) {
     $id = intval($_GET['download']);
     $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
 
-    if ($conn->connect_error) die("Connection failed: " . $conn->connect_error);
+    if ($conn->connect_error)
+        die("Connection failed: " . $conn->connect_error);
 
     $stmt = $conn->prepare("SELECT file_paths FROM file_paths WHERE id = ?");
     $stmt->bind_param("i", $id);
@@ -41,12 +42,8 @@ if (isset($_GET['download'])) {
     $stmt->fetch();
     $stmt->close();
 
-    // Debug: output the path we retrieved from the database
-    echo "Database file path: " . $file_path . "<br>";
-
     // Fix the file path construction by adding a slash
     $full_path = $_SERVER['DOCUMENT_ROOT'] . '/' . $file_path; // Ensure there's a slash between DOCUMENT_ROOT and the file path
-    echo "Full file path: " . $full_path . "<br>"; // Debugging output
 
     if ($file_path && file_exists($full_path)) {
         header('Content-Description: File Transfer');
@@ -62,9 +59,6 @@ if (isset($_GET['download'])) {
         exit;
     }
 }
-
-
-
 
 // Fetch all files
 $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
@@ -215,7 +209,12 @@ $result = $stmt->get_result();
 <body>
     <div class="container mt-5">
         <h1 class="display-1">File Management</h1>
-        <a href="resources_add.php" class="btn btn-primary mb-3">Add New File</a>
+
+        <!-- Only admins can see the "Add New File" button -->
+        <?php if ($_SESSION['role'] == 'admin') { ?>
+            <a href="resources_add.php" class="btn btn-primary mb-3">Add New File</a>
+        <?php } ?>
+
         <table class="table table-striped table-hover">
             <thead>
                 <tr>
@@ -234,8 +233,16 @@ $result = $stmt->get_result();
                         <td><?php echo $row['description']; ?></td>
                         <td><?php echo $row['uploaded_at']; ?></td>
                         <td>
+                            <!-- Both admins and users can see the Download button -->
                             <a href="resources.php?download=<?php echo $row['id']; ?>" class="btn btn-success">Download</a>
-                            <a href="resources.php?delete=<?php echo $row['id']; ?>" class="btn btn-danger">Delete</a>
+
+                            <!-- Only admins can see the Delete button -->
+                            <?php if ($_SESSION['role'] == 'admin') { ?>
+                                <a href="resources.php?delete=<?php echo $row['id']; ?>" class="btn btn-danger">Delete</a>
+                            <?php } else { ?>
+                                <!-- Non-admin users will see a message instead of Delete button -->
+                                <span class="text-muted">Actions available for admins only</span>
+                            <?php } ?>
                         </td>
                     </tr>
                 <?php } ?>
