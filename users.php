@@ -160,7 +160,8 @@ include('includes/header.php');
                 padding: 6px 12px;
             }
 
-            table th, table td {
+            table th,
+            table td {
                 padding: 8px;
                 font-size: 13px;
             }
@@ -174,7 +175,8 @@ include('includes/header.php');
 </head>
 
 <?php
-if (isset($_GET['delete'])) {
+// Deleting a user only if the user is an admin
+if (isset($_GET['delete']) && $_SESSION['role'] == 'admin') {
     if ($stm = $connect->prepare('DELETE FROM users WHERE id = ?')) {
         $stm->bind_param('i', $_GET['delete']);
         $stm->execute();
@@ -183,19 +185,19 @@ if (isset($_GET['delete'])) {
         header('Location: users.php');
         $stm->close();
         die();
-
     } else {
         echo 'Could not prepare statement!';
     }
 }
 
+// Fetching users
 if ($stm = $connect->prepare('SELECT * FROM users')) {
     $stm->execute();
 
     $result = $stm->get_result();
 
     if ($result->num_rows > 0) {
-?>
+        ?>
         <div class="container mt-5">
             <div class="row justify-content-center">
                 <div class="col-md-8">
@@ -218,8 +220,18 @@ if ($stm = $connect->prepare('SELECT * FROM users')) {
                                     <td><?php echo $record['email']; ?></td>
                                     <td><?php echo $record['active'] ? 'Active' : 'Inactive'; ?></td>
                                     <td>
-                                        <a href="users_edit.php?id=<?php echo $record['id']; ?>" class="btn btn-warning btn-sm">Edit</a>
-                                        <a href="users.php?delete=<?php echo $record['id']; ?>" class="btn btn-danger btn-sm">Delete</a>
+                                        <!-- Admins can edit and delete users -->
+                                        <a href="users_edit.php?id=<?php echo $record['id']; ?>"
+                                            class="btn btn-warning btn-sm">Edit</a>
+
+                                        <?php if ($_SESSION['role'] == 'admin') { ?>
+                                            <!-- Only admins can delete -->
+                                            <a href="users.php?delete=<?php echo $record['id']; ?>"
+                                                class="btn btn-danger btn-sm">Delete</a>
+                                        <?php } else { ?>
+                                            <!-- For non-admins, show a message instead -->
+                                            <span class="text-muted">Delete (Admin Only)</span>
+                                        <?php } ?>
                                     </td>
                                 </tr>
                             <?php } ?>
@@ -229,7 +241,7 @@ if ($stm = $connect->prepare('SELECT * FROM users')) {
                 </div>
             </div>
         </div>
-<?php
+        <?php
     } else {
         echo '<div class="alert alert-info text-center">No users found.</div>';
     }
