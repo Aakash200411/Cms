@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Student Details from CSV</title>
+  </head>
+  <body>
+    <h2>Upload Student Details from CSV</h2>
+    <form action="upload_csv.php" method="POST" enctype="multipart/form-data">
+      <label for="file">Select CSV File:</label>
+      <input type="file" name="file" id="file" accept=".csv" required />
+      <br /><br />
+      <button type="submit">Upload</button>
+    </form>
+  </body>
+</html>
