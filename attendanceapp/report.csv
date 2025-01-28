@@ -1,0 +1,17 @@
+Session:,"2024 SPRING SEMESTER"
+Course:,"CS112-Data Mining & Data Warehousing"
+Faculty:,Pallabi
+total,1
+start,2025-01-16
+end,2025-01-16
+slno,rollno,name,attended,percent
+1,CSB21004,"Sophia Williams",1,100
+2,CSB21005,"Daniel Brown",1,100
+3,CSB21008,"Emma Miller",1,100
+4,CSB21012,"Ava Anderson",1,100
+5,CSM21002,"Isabella Rodriguez",1,100
+6,CSM21004,"Olivia Hernandez",1,100
+7,CSM21006,"Sophia Perez",1,100
+8,CSM21009,"William Martinez",1,100
+9,CSM21011,"James Rodriguez",1,100
+10,CSM21012,"Emma Hernandez",0,0
