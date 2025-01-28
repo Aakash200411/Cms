@@ -1,9 +1,16 @@
 <?php
-// Database connection
+// Database connection to `attendance_db`
 $conn = new mysqli("localhost", "root", "", "attendance_db");
 
 if ($conn->connect_error) {
   die("Connection failed: " . $conn->connect_error);
+}
+
+// Database connection to the other database containing `users` table
+$usersDb = new mysqli('localhost', 'cms', 'secret@cms', 'cms');
+
+if ($usersDb->connect_error) {
+  die("Connection to users database failed: " . $usersDb->connect_error);
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -38,9 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $teacher_name = $row[8];
         $courses = array_slice($row, 9, 5); // Assuming the next 5 columns are for course names (subjects)
 
-        // Insert student details into the database and get the student ID
+        // Insert student details into the `attendance_db` database
         $query = "INSERT INTO student_details (roll_no, name, email_id, password, parent_email, role) 
-                          VALUES (?, ?, ?, ?, ?, ?)";
+                              VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("ssssss", $roll_no, $name, $email_id, $password, $parent_email, $role);
 
@@ -49,7 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           continue;
         }
 
-        // Get the student ID from the last inserted row
+        // Insert data into the `users` table in the `users_db` database
+        $user_query = "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)";
+        $user_stmt = $usersDb->prepare($user_query);
+        $user_stmt->bind_param("ssss", $name, $email_id, $password, $role);
+
+        if (!$user_stmt->execute()) {
+          echo "Error inserting data into users table for email: $email_id - " . $user_stmt->error . "<br>";
+        }
+
+        // Get the student ID from the last inserted row in `attendance_db`
         $student_id = $conn->insert_id;
 
         // 1. Check if the session exists
@@ -101,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
           // Insert the course registration for the student
           $course_registration_query = "INSERT INTO course_registration (student_id, course_id, session_id) 
-                                                  VALUES (?, ?, ?)";
+                                                          VALUES (?, ?, ?)";
           $course_registration_stmt = $conn->prepare($course_registration_query);
           $course_registration_stmt->bind_param("iii", $student_id, $course_id, $session_id);
 
@@ -122,6 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   }
 }
 
-// Close the database connection
+// Close the database connections
 $conn->close();
+$usersDb->close();
 ?>
