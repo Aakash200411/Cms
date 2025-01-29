@@ -38,7 +38,7 @@
             <option value="">-- Select Session --</option>
             <?php
             // Fetch session details from the database
-            $conn = new mysqli('mysql.railway.internal', 'root', 'llBhSnJhgoNktIPCqMYyNgPPAPJRdalt', 'railway');
+            $conn = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
             if ($conn->connect_error) {
                 die("Connection failed: " . $conn->connect_error);
             }
@@ -59,7 +59,7 @@
         <div id="course-list">
             <?php
             // Fetch course details from the database
-            $conn = new mysqli('mysql.railway.internal', 'root', 'llBhSnJhgoNktIPCqMYyNgPPAPJRdalt', 'railway');
+            $conn = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
             if ($conn->connect_error) {
                 die("Connection failed: " . $conn->connect_error);
             }
