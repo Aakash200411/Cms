@@ -11,7 +11,7 @@
     <h2>Course Allotment Form</h2>
     <?php
     // Database connection
-    $conn = new mysqli('mysql.railway.internal', 'root', 'llBhSnJhgoNktIPCqMYyNgPPAPJRdalt', 'railway');
+    $conn = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
 
     // Check connection
     if ($conn->connect_error) {
