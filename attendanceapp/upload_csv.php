@@ -39,15 +39,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $parent_email = isset($row[4]) ? $row[4] : null;
         $role = isset($row[5]) ? $row[5] : 'user'; // Default to 'user' if not provided
 
-        // Extract session, teacher name, and course name
+        // Extract session and course details
         $session_year = $row[6];
         $term = $row[7];
-        $teacher_name = $row[8];
-        $courses = array_slice($row, 9, 5); // Assuming the next 5 columns are for course names (subjects)
+        $courses = array_slice($row, 8, 5); // Assuming the next 5 columns are for course names (subjects)
 
         // Insert student details into the `attendance_db` database
         $query = "INSERT INTO student_details (roll_no, name, email_id, password, parent_email, role) 
-                              VALUES (?, ?, ?, ?, ?, ?)";
+                          VALUES (?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("ssssss", $roll_no, $name, $email_id, $password, $parent_email, $role);
 
@@ -82,21 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $session_id = $session_result->fetch_assoc()['id'];
 
-        // 2. Check if the teacher exists
-        $teacher_query = "SELECT id FROM faculty_details WHERE name = ?";
-        $teacher_stmt = $conn->prepare($teacher_query);
-        $teacher_stmt->bind_param("s", $teacher_name);
-        $teacher_stmt->execute();
-        $teacher_result = $teacher_stmt->get_result();
-
-        if ($teacher_result->num_rows == 0) {
-          echo "Teacher $teacher_name not found. Skipping student $roll_no.<br>";
-          continue;
-        }
-
-        $faculty_id = $teacher_result->fetch_assoc()['id'];
-
-        // 3. Insert the courses into the `course_registration` table for each of the 5 subjects
+        // 2. Insert the courses into the `course_registration` table for each of the 5 subjects
         foreach ($courses as $course_name) {
           if (empty($course_name))
             continue;
@@ -117,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
           // Insert the course registration for the student
           $course_registration_query = "INSERT INTO course_registration (student_id, course_id, session_id) 
-                                                          VALUES (?, ?, ?)";
+                                                  VALUES (?, ?, ?)";
           $course_registration_stmt = $conn->prepare($course_registration_query);
           $course_registration_stmt->bind_param("iii", $student_id, $course_id, $session_id);
 
