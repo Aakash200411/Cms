@@ -7,7 +7,7 @@ if ($conn->connect_error) {
 }
 
 // Database connection to the other database containing `users` table
-$usersDb = new mysqli('mysql.railway.internal', 'root', 'llBhSnJhgoNktIPCqMYyNgPPAPJRdalt', 'railway');
+$usersDb = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
 
 if ($usersDb->connect_error) {
   die("Connection to users database failed: " . $usersDb->connect_error);
