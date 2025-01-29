@@ -1,6 +1,6 @@
 <?php
 // Database connection to `attendance_db`
-$conn = new mysqli('mysql.railway.internal', 'root', 'llBhSnJhgoNktIPCqMYyNgPPAPJRdalt', 'railway');
+$conn = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
 
 if ($conn->connect_error) {
   die("Connection failed: " . $conn->connect_error);
