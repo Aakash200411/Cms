@@ -1,6 +1,6 @@
 <?php
 
-$connect = mysqli_connect('localhost', 'cms', 'secret@cms', 'cms');
+$connect = mysqli_connect('mysql.railway.internal', 'root', 'llBhSnJhgoNktIPCqMYyNgPPAPJRdalt', 'railway');
 
 if (mysqli_connect_errno()) {
     exit('Failed to connect to Mysql : ' . mysqli_connect_error());
