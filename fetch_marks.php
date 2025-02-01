@@ -2,38 +2,89 @@
 include('includes/config.php');
 include('includes/database.php');
 include('includes/functions.php');
+require_once('tcpdf/tcpdf.php'); // Include TCPDF library
+
 secure();
 
-include('includes/header.php');
-
-// Fetch all subjects
+// Fetch subjects
 $result_subjects = $connect->query("SELECT id, subject_name FROM subjects");
 
-// Fetch selected subject's marks if subject is selected
-if (isset($_GET['subject_id'])) {
-    $subject_id = $_GET['subject_id'];
+// Check if "Overview" button is clicked to generate PDF
+if (isset($_GET['export_pdf'])) {
+    // Fetch all marks data
     $stmt = $connect->prepare("
-        SELECT u.username, m.ca1_marks, m.ca2_marks, m.ut1_marks, m.term_test_marks, m.project_marks, m.total_marks
-        FROM subject_marks m
-        JOIN users u ON m.user_id = u.id
-        WHERE m.subject_id = ?
-    ");
-    $stmt->bind_param('i', $subject_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-}
-
-// Fetch all marks for all subjects if the 'overview' button is clicked
-if (isset($_GET['overview'])) {
-    $stmt_all_marks = $connect->prepare("
-        SELECT u.username, s.subject_name, m.ca1_marks, m.ca2_marks, m.ut1_marks, m.term_test_marks, m.project_marks, m.total_marks
+        SELECT u.username, s.subject_name, m.ca1_marks, m.ca2_marks, m.ut1_marks, m.term_test_marks, m.project_marks
         FROM subject_marks m
         JOIN users u ON m.user_id = u.id
         JOIN subjects s ON m.subject_id = s.id
+        ORDER BY s.subject_name
     ");
-    $stmt_all_marks->execute();
-    $result_all_marks = $stmt_all_marks->get_result();
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    // Organize data into an associative array grouped by subject
+    $marks_data = [];
+    while ($row = $result->fetch_assoc()) {
+        $subject = $row['subject_name'];
+        if (!isset($marks_data[$subject])) {
+            $marks_data[$subject] = [];
+        }
+        $marks_data[$subject][] = $row;
+    }
+
+    // Generate PDF
+    $pdf = new TCPDF();
+    $pdf->SetCreator(PDF_CREATOR);
+    $pdf->SetAuthor('Admin');
+    $pdf->SetTitle('Marks Overview');
+    $pdf->SetAutoPageBreak(TRUE, 10);
+    $pdf->AddPage();
+    $pdf->SetFont('helvetica', '', 10);
+
+    // PDF Title
+    $pdf->SetFont('helvetica', 'B', 16);
+    $pdf->Cell(0, 10, 'Marks Overview', 0, 1, 'C');
+    $pdf->Ln(5);
+
+    // Generate tables for each subject and test type
+    $pdf->SetFont('helvetica', '', 10);
+    foreach ($marks_data as $subject => $records) {
+        $pdf->SetFont('helvetica', 'B', 12);
+        $pdf->Cell(0, 8, "Subject: $subject", 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+
+        $test_types = ['ca1_marks' => 'CA1', 'ca2_marks' => 'CA2', 'ut1_marks' => 'UT1', 'term_test_marks' => 'Term Test', 'project_marks' => 'Project'];
+
+        foreach ($test_types as $column => $test_name) {
+            // Create table header
+            $table_html = '<table border="1" cellpadding="4">
+                <thead>
+                    <tr>
+                        <th><b>Username</b></th>
+                        <th><b>' . $test_name . '</b></th>
+                    </tr>
+                </thead>
+                <tbody>';
+
+            foreach ($records as $record) {
+                $table_html .= '<tr>
+                    <td>' . htmlspecialchars($record['username']) . '</td>
+                    <td>' . htmlspecialchars($record[$column]) . '</td>
+                </tr>';
+            }
+
+            $table_html .= '</tbody></table><br>';
+            $pdf->writeHTML($table_html, true, false, false, false, '');
+        }
+        $pdf->Ln(5);
+    }
+
+    // Output PDF
+    $pdf->Output('Marks_Overview.pdf', 'D');
+    exit;
 }
+
+include('includes/header.php');
 ?>
 
 <!DOCTYPE html>
@@ -50,101 +101,10 @@ if (isset($_GET['overview'])) {
     <div class="container mt-5">
         <h1 class="display-4">View Marks</h1>
 
-        <!-- Subject Selection -->
-        <form method="get" action="fetch_marks.php" class="mb-4">
-            <label for="subject_id" class="form-label">Select Subject:</label>
-            <select name="subject_id" id="subject_id" class="form-select" required>
-                <option value="" disabled selected>Select a subject</option>
-                <?php while ($subject = $result_subjects->fetch_assoc()) { ?>
-                    <option value="<?php echo $subject['id']; ?>" <?php if (isset($subject_id) && $subject_id == $subject['id'])
-                           echo 'selected'; ?>>
-                        <?php echo htmlspecialchars($subject['subject_name']); ?>
-                    </option>
-                <?php } ?>
-            </select>
-            <button type="submit" class="btn btn-primary mt-2">View Marks</button>
-        </form>
-
         <!-- Overview Button -->
-        <form method="get" action="fetch_marks.php" class="mb-4">
-            <button type="submit" name="overview" class="btn btn-info">Overview</button>
+        <form method="get" action="fetch_marks.php">
+            <button type="submit" name="export_pdf" class="btn btn-danger">Export PDF</button>
         </form>
-
-        <!-- Marks Table for Selected Subject -->
-        <?php if (isset($result) && $result->num_rows > 0) { ?>
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>CA1</th>
-                        <th>CA2</th>
-                        <th>UT1</th>
-                        <th>Term Test</th>
-                        <th>Project</th>
-                        <th>Total Marks</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($row = $result->fetch_assoc()) { ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($row['username']); ?></td>
-                            <td><?php echo htmlspecialchars($row['ca1_marks']); ?></td>
-                            <td><?php echo htmlspecialchars($row['ca2_marks']); ?></td>
-                            <td><?php echo htmlspecialchars($row['ut1_marks']); ?></td>
-                            <td><?php echo htmlspecialchars($row['term_test_marks']); ?></td>
-                            <td><?php echo htmlspecialchars($row['project_marks']); ?></td>
-                            <td><?php echo htmlspecialchars($row['total_marks']); ?></td>
-                        </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
-        <?php } else if (isset($subject_id)) { ?>
-                <p class="text-danger">No marks found for the selected subject.</p>
-        <?php } ?>
-
-        <!-- Overview Marks Tables -->
-        <?php if (isset($result_all_marks) && $result_all_marks->num_rows > 0) { ?>
-            <?php
-            $previous_subject = "";
-            while ($row = $result_all_marks->fetch_assoc()) {
-                // Check if we need to start a new table for a new subject
-                if ($previous_subject != $row['subject_name']) {
-                    if ($previous_subject != "") {
-                        echo "</tbody></table><br>";
-                    }
-                    echo "<h3 class='mt-4'>" . htmlspecialchars($row['subject_name']) . "</h3>";
-                    echo "<table class='table table-bordered'>
-                                <thead>
-                                    <tr>
-                                        <th>Username</th>
-                                        <th>CA1</th>
-                                        <th>CA2</th>
-                                        <th>UT1</th>
-                                        <th>Term Test</th>
-                                        <th>Project</th>
-                                        <th>Total Marks</th>
-                                    </tr>
-                                </thead>
-                                <tbody>";
-                    $previous_subject = $row['subject_name'];
-                }
-
-                // Table rows for each student in the subject
-                echo "<tr>
-                            <td>" . htmlspecialchars($row['username']) . "</td>
-                            <td>" . htmlspecialchars($row['ca1_marks']) . "</td>
-                            <td>" . htmlspecialchars($row['ca2_marks']) . "</td>
-                            <td>" . htmlspecialchars($row['ut1_marks']) . "</td>
-                            <td>" . htmlspecialchars($row['term_test_marks']) . "</td>
-                            <td>" . htmlspecialchars($row['project_marks']) . "</td>
-                            <td>" . htmlspecialchars($row['total_marks']) . "</td>
-                          </tr>";
-            }
-            echo "</tbody></table>";
-            ?>
-        <?php } else if (isset($_GET['overview'])) { ?>
-                <p class="text-danger">No marks found for the overview.</p>
-        <?php } ?>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.2.0/mdb.min.js"></script>
