@@ -1,13 +1,13 @@
 <?php
 // Database connection to `attendance_db`
-$conn = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
+$conn = new mysqli('localhost', 'cms', 'secret@cms', 'cms');
 
 if ($conn->connect_error) {
   die("Connection failed: " . $conn->connect_error);
 }
 
 // Database connection to the other database containing `users` table
-$usersDb = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
+$usersDb = new mysqli('localhost', 'cms', 'secret@cms', 'cms');
 
 if ($usersDb->connect_error) {
   die("Connection to users database failed: " . $usersDb->connect_error);
