@@ -21,7 +21,7 @@ if (isset($_POST['roll_no']) && isset($_POST['name']) && isset($_POST['email']) 
     }
 
     // Create a connection to the attendance_db database
-    $conn_attendance = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
+    $conn_attendance = new mysqli('localhost', 'cms', 'secret@cms', 'cms');
     if ($conn_attendance->connect_error) {
         die("Attendance DB connection failed: " . $conn_attendance->connect_error);
     }
@@ -46,7 +46,7 @@ if (isset($_POST['roll_no']) && isset($_POST['name']) && isset($_POST['email']) 
         }
 
         // Now connect to the CMS database
-        $conn_cms = new mysqli('mysql.railway.internal', 'root', 'YTHbOgINtFZqRZcABqbrRxiPOtnJcqQE', 'railway');
+        $conn_cms = new mysqli('localhost', 'cms', 'secret@cms', 'cms');
         if ($conn_cms->connect_error) {
             die("CMS DB connection failed: " . $conn_cms->connect_error);
         }
