@@ -13,7 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['video'])) {
     $videoTmpName = $video['tmp_name'];
     $description = isset($_POST['description']) ? $_POST['description'] : null;
 
-    $uploadDir = "C:/xampp/htdocs/uploads/videos/"; // Absolute path where videos are stored
+    // Define the upload directory
+    $uploadDir = "uploads/videos/";  // Relative path to store the video files
     $uploadPath = $uploadDir . $videoName;
 
     // Ensure the uploads directory exists
@@ -21,28 +22,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['video'])) {
         mkdir($uploadDir, 0777, true); // Create directory with appropriate permissions
     }
 
-    // Move the file to the uploads directory
-    if (move_uploaded_file($videoTmpName, $uploadPath)) {
-        $relativePath = "uploads/videos/" . $videoName; // Relative path to save in database
+    // Check if the uploaded file is a video
+    $allowedExtensions = ['mp4', 'avi', 'mov', 'mkv']; // List of allowed video file extensions
+    $fileExtension = pathinfo($videoName, PATHINFO_EXTENSION);
 
-        // Save video information to the database
-        $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
-        if ($conn->connect_error)
-            die("Connection failed: " . $conn->connect_error);
+    if (in_array(strtolower($fileExtension), $allowedExtensions)) {
+        // Move the uploaded file to the server's storage directory
+        if (move_uploaded_file($videoTmpName, $uploadPath)) {
+            // Save video information to the database
+            $conn = new mysqli('mysql.db.mdbgo.com', 'aakash200411_cmsdb', 'Secret@cms1', 'aakash200411_cmsdb');
+            if ($conn->connect_error)
+                die("Connection failed: " . $conn->connect_error);
 
-        $stmt = $conn->prepare("INSERT INTO video_paths (name, video_paths, description) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $videoName, $relativePath, $description);
+            $stmt = $conn->prepare("INSERT INTO video_paths (name, video_paths, description) VALUES (?, ?, ?)");
+            $stmt->bind_param("sss", $videoName, $uploadPath, $description);
 
-        if ($stmt->execute()) {
-            set_message("Video uploaded successfully.");
-            header("Location: videos.php");
-            $stmt->close();
-            die();
+            if ($stmt->execute()) {
+                set_message("Video uploaded successfully.");
+                header("Location: videos.php");
+                $stmt->close();
+                die();
+            } else {
+                echo "Database error: " . $conn->error;
+            }
         } else {
-            echo "Database error: " . $conn->error;
+            echo "Failed to upload the video. Check directory permissions.";
         }
     } else {
-        echo "Failed to upload the video. Check directory permissions.";
+        echo "Invalid file type. Only video files are allowed.";
     }
 }
 ?>
