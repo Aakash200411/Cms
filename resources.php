@@ -9,28 +9,7 @@ include('includes/header.php');
 // Handle file deletion (only for admin users)
 if (isset($_GET['delete']) && $_SESSION['role'] == 'admin') {
     $id = intval($_GET['delete']);
-    $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
-
-    if ($conn->connect_error)
-        die("Connection failed: " . $conn->connect_error);
-
-    $stmt = $conn->prepare("DELETE FROM file_paths WHERE id = ?");
-    $stmt->bind_param("i", $id);
-
-    if ($stmt->execute()) {
-        set_message("File with ID $id has been deleted.");
-        header("Location: resources.php");
-        $stmt->close();
-        die();
-    } else {
-        echo "Could not prepare statement!";
-    }
-}
-
-// Handle file download (accessible to all users)
-if (isset($_GET['download'])) {
-    $id = intval($_GET['download']);
-    $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
+    $conn = new mysqli('mysql.db.mdbgo.com', 'aakash200411_cmsdb', 'Secret@cms1', 'aakash200411_cmsdb');
 
     if ($conn->connect_error)
         die("Connection failed: " . $conn->connect_error);
@@ -42,17 +21,56 @@ if (isset($_GET['download'])) {
     $stmt->fetch();
     $stmt->close();
 
-    // Fix the file path construction by adding a slash
-    $full_path = $_SERVER['DOCUMENT_ROOT'] . '/' . $file_path; // Ensure there's a slash between DOCUMENT_ROOT and the file path
+    // The file path stored in the database is relative (e.g., 'uploads/aakashphoto.pdf')
+    $full_path = $file_path; // Use the relative file path
+
+    // Check if the file exists before deleting
+    if (file_exists($full_path)) {
+        unlink($full_path); // Delete the file from the server
+
+        // Now delete the record from the database
+        $stmt = $conn->prepare("DELETE FROM file_paths WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        if ($stmt->execute()) {
+            set_message("File with ID $id has been deleted.");
+            header("Location: resources.php");
+            $stmt->close();
+            die();
+        } else {
+            echo "Error deleting file from database.";
+        }
+    } else {
+        echo "File not found on the server.";
+    }
+}
+
+// Handle file download (accessible to all users)
+if (isset($_GET['download'])) {
+    $id = intval($_GET['download']);
+    $conn = new mysqli('mysql.db.mdbgo.com', 'aakash200411_cmsdb', 'Secret@cms1', 'aakash200411_cmsdb');
+
+    if ($conn->connect_error)
+        die("Connection failed: " . $conn->connect_error);
+
+    $stmt = $conn->prepare("SELECT file_paths FROM file_paths WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->bind_result($file_path);
+    $stmt->fetch();
+    $stmt->close();
+
+    // The file path stored in the database is relative (e.g., 'uploads/aakashphoto.pdf')
+    $full_path = $file_path; // Use the relative file path
 
     if ($file_path && file_exists($full_path)) {
+        // Send headers to trigger file download
         header('Content-Description: File Transfer');
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . basename($full_path) . '"');
         header('Content-Length: ' . filesize($full_path));
         header('Pragma: public');
         flush();
-        readfile($full_path);
+        readfile($full_path);  // This should work since file is in the 'uploads' folder
         exit;
     } else {
         echo "File not found at: " . $full_path . "<br>";
@@ -61,7 +79,7 @@ if (isset($_GET['download'])) {
 }
 
 // Fetch all files
-$conn = new mysqli("localhost", "cms", "secret@cms", "cms");
+$conn = new mysqli('mysql.db.mdbgo.com', 'aakash200411_cmsdb', 'Secret@cms1', 'aakash200411_cmsdb');
 if ($conn->connect_error)
     die("Connection failed: " . $conn->connect_error);
 
