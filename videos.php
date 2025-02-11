@@ -9,7 +9,7 @@ include('includes/header.php');
 // Handle file deletion (only for admins)
 if (isset($_GET['delete']) && $_SESSION['role'] == 'admin') {
     $id = intval($_GET['delete']);
-    $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
+    $conn = new mysqli('mysql.db.mdbgo.com', 'aakash200411_cmsdb', 'Secret@cms1', 'aakash200411_cmsdb');
 
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
@@ -31,7 +31,7 @@ if (isset($_GET['delete']) && $_SESSION['role'] == 'admin') {
 // Handle file download
 if (isset($_GET['download'])) {
     $id = intval($_GET['download']);
-    $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
+    $conn = new mysqli('mysql.db.mdbgo.com', 'aakash200411_cmsdb', 'Secret@cms1', 'aakash200411_cmsdb');
 
     if ($conn->connect_error)
         die("Connection failed: " . $conn->connect_error);
@@ -43,7 +43,10 @@ if (isset($_GET['download'])) {
     $stmt->fetch();
     $stmt->close();
 
-    $full_path = $_SERVER['DOCUMENT_ROOT'] . '/' . $video_path;
+    $file_path = "C:\\CMS\\cms\\uploads\\videos";
+
+    // Build the full path based on the document root and relative video path
+    $full_path = $file_path; // Use the relative file path
 
     if ($video_path && file_exists($full_path)) {
         header('Content-Description: File Transfer');
@@ -61,7 +64,7 @@ if (isset($_GET['download'])) {
 }
 
 // Fetch all videos
-$conn = new mysqli("localhost", "cms", "secret@cms", "cms");
+$conn = new mysqli('mysql.db.mdbgo.com', 'aakash200411_cmsdb', 'Secret@cms1', 'aakash200411_cmsdb');
 if ($conn->connect_error)
     die("Connection failed: " . $conn->connect_error);
 
