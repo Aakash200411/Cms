@@ -1,43 +1,38 @@
 <?php
+ob_start(); // Start output buffering
+
 include('includes/config.php');
 include('includes/database.php');
 include('includes/functions.php');
 require_once('tcpdf/tcpdf.php'); // Include TCPDF library
 
-secure();
+secure(); // Ensure only authenticated users access this page
 
-// Fetch subjects
-$result_subjects = $connect->query("SELECT id, subject_name FROM subjects");
-
-// Check if "Overview" button is clicked to generate PDF
+// Handle PDF Export
 if (isset($_GET['export_pdf'])) {
-    // Fetch all marks data
+    // Fetch marks data
     $stmt = $connect->prepare("
         SELECT u.username, s.subject_name, m.ca1_marks, m.ca2_marks, m.ut1_marks, m.term_test_marks, m.project_marks
         FROM subject_marks m
         JOIN users u ON m.user_id = u.id
         JOIN subjects s ON m.subject_id = s.id
-        ORDER BY s.subject_name
+        ORDER BY s.subject_name, u.username
     ");
     $stmt->execute();
     $result = $stmt->get_result();
 
-    // Organize data into an associative array grouped by subject
+    // Organize data by subject
     $marks_data = [];
     while ($row = $result->fetch_assoc()) {
-        $subject = $row['subject_name'];
-        if (!isset($marks_data[$subject])) {
-            $marks_data[$subject] = [];
-        }
-        $marks_data[$subject][] = $row;
+        $marks_data[$row['subject_name']][] = $row;
     }
 
-    // Generate PDF
+    // Initialize PDF
     $pdf = new TCPDF();
     $pdf->SetCreator(PDF_CREATOR);
     $pdf->SetAuthor('Admin');
     $pdf->SetTitle('Marks Overview');
-    $pdf->SetAutoPageBreak(TRUE, 10);
+    $pdf->SetAutoPageBreak(true, 10);
     $pdf->AddPage();
     $pdf->SetFont('helvetica', '', 10);
 
@@ -46,18 +41,24 @@ if (isset($_GET['export_pdf'])) {
     $pdf->Cell(0, 10, 'Marks Overview', 0, 1, 'C');
     $pdf->Ln(5);
 
-    // Generate tables for each subject and test type
-    $pdf->SetFont('helvetica', '', 10);
+    // Generate tables for each subject
     foreach ($marks_data as $subject => $records) {
         $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 8, "Subject: $subject", 0, 1, 'L');
         $pdf->SetFont('helvetica', '', 10);
 
-        $test_types = ['ca1_marks' => 'CA1', 'ca2_marks' => 'CA2', 'ut1_marks' => 'UT1', 'term_test_marks' => 'Term Test', 'project_marks' => 'Project'];
+        // Define test categories
+        $test_types = [
+            'ca1_marks' => 'CA1',
+            'ca2_marks' => 'CA2',
+            'ut1_marks' => 'UT1',
+            'term_test_marks' => 'Term Test',
+            'project_marks' => 'Project'
+        ];
 
+        // Generate tables for each test type
         foreach ($test_types as $column => $test_name) {
-            // Create table header
-            $table_html = '<table border="1" cellpadding="4">
+            $html = '<table border="1" cellpadding="4">
                 <thead>
                     <tr>
                         <th><b>Username</b></th>
@@ -65,16 +66,14 @@ if (isset($_GET['export_pdf'])) {
                     </tr>
                 </thead>
                 <tbody>';
-
             foreach ($records as $record) {
-                $table_html .= '<tr>
+                $html .= '<tr>
                     <td>' . htmlspecialchars($record['username']) . '</td>
-                    <td>' . htmlspecialchars($record[$column]) . '</td>
+                    <td>' . htmlspecialchars($record[$column] ?? 'N/A') . '</td>
                 </tr>';
             }
-
-            $table_html .= '</tbody></table><br>';
-            $pdf->writeHTML($table_html, true, false, false, false, '');
+            $html .= '</tbody></table><br>';
+            $pdf->writeHTML($html, true, false, false, false, '');
         }
         $pdf->Ln(5);
     }
@@ -82,6 +81,9 @@ if (isset($_GET['export_pdf'])) {
     // Output PDF
     $pdf->Output('Marks_Overview.pdf', 'D');
     exit;
+
+    ob_end_clean(); // Clean the output buffer
+
 }
 
 include('includes/header.php');
@@ -101,7 +103,7 @@ include('includes/header.php');
     <div class="container mt-5">
         <h1 class="display-4">View Marks</h1>
 
-        <!-- Overview Button -->
+        <!-- Export PDF Button -->
         <form method="get" action="fetch_marks.php">
             <button type="submit" name="export_pdf" class="btn btn-danger">Export PDF</button>
         </form>
