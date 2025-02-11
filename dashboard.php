@@ -107,17 +107,11 @@ include('includes/header.php');
                 <!-- Attendance Card with Conditional Link -->
                 <div class="col">
                     <?php if ($_SESSION['role'] == 'admin') { ?>
-                        <a href="attendance.php" class="card text-decoration-none" aria-label="Attendance Management">
+                        <a href="/attendanceapp/attendance.php" class="card text-decoration-none"
+                            aria-label="Attendance Management">
                             <div class="card-body bg-info text-white">
                                 <h5 class="card-title"><i class="fas fa-calendar-check"></i> Attendance Management</h5>
                                 <p class="card-text">Track and manage attendance</p>
-                            </div>
-                        </a>
-                    <?php } else { ?>
-                        <a href="view_attendance.php" class="card text-decoration-none" aria-label="View Attendance">
-                            <div class="card-body bg-info text-white">
-                                <h5 class="card-title"><i class="fas fa-calendar-check"></i> View Attendance</h5>
-                                <p class="card-text">View your attendance records</p>
                             </div>
                         </a>
                     <?php } ?>
