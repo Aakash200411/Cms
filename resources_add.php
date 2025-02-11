@@ -10,10 +10,11 @@ include('includes/header.php');
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     $file = $_FILES['file'];
     $fileName = basename($file['name']);
-    $fileTmpName = $file['tmp_name'];
+    $fileTmpName = $file['tmp_name']; // Temporary path
     $description = isset($_POST['description']) ? $_POST['description'] : null;
 
-    $uploadDir = "C:/xampp/htdocs/uploads/"; // Absolute path where files are stored
+    // Absolute path to upload directory
+    $uploadDir = "uploads/"; // Adjust if needed for your environment
     $uploadPath = $uploadDir . $fileName;
 
     // Ensure the uploads directory exists
@@ -23,10 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
 
     // Move the file to the uploads directory
     if (move_uploaded_file($fileTmpName, $uploadPath)) {
-        $relativePath = "uploads/" . $fileName; // Relative path to save in database
+        $relativePath = $uploadPath; // Relative path to save in database
 
         // Save file information to the database
-        $conn = new mysqli("localhost", "cms", "secret@cms", "cms");
+        $conn = new mysqli('mysql.db.mdbgo.com', 'aakash200411_cmsdb', 'Secret@cms1', 'aakash200411_cmsdb');
         if ($conn->connect_error)
             die("Connection failed: " . $conn->connect_error);
 
@@ -56,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     <title>Add New File</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
-        /* General page styling */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f8f9fa;
