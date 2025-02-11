@@ -9,42 +9,66 @@ include('includes/header.php');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subject_id = $_POST['subject_id'];
 
-    // Clear existing marks for the selected subject
-    $stmt = $connect->prepare("DELETE FROM subject_marks WHERE subject_id = ?");
-    $stmt->bind_param('i', $subject_id);
-    $stmt->execute();
-
-    // Insert new marks data
+    // Loop through submitted marks and update or insert them
     foreach ($_POST['marks'] as $user_id => $marks) {
-        $total = ($marks['ca1'] ?? 0) + ($marks['ca2'] ?? 0) + ($marks['ut1'] ?? 0) + ($marks['term_test'] ?? 0) + ($marks['project'] ?? 0);
-        $stmt = $connect->prepare(
-            "INSERT INTO subject_marks (user_id, subject_id, ca1_marks, ca2_marks, ut1_marks, term_test_marks, project_marks, total_marks) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-        );
-        $stmt->bind_param(
-            'iiiiiiii',
-            $user_id,
-            $subject_id,
-            $marks['ca1'] ?? 0,
-            $marks['ca2'] ?? 0,
-            $marks['ut1'] ?? 0,
-            $marks['term_test'] ?? 0,
-            $marks['project'] ?? 0,
-            $total
-        );
+        $ca1 = intval($marks['ca1'] ?? 0);
+        $ca2 = intval($marks['ca2'] ?? 0);
+        $ut1 = intval($marks['ut1'] ?? 0);
+        $term_test = intval($marks['term_test'] ?? 0);
+        $project = intval($marks['project'] ?? 0);
+        $total = $ca1 + $ca2 + $ut1 + $term_test + $project;
+
+        // Check if marks already exist for the user in this subject
+        $stmt = $connect->prepare("SELECT id FROM subject_marks WHERE user_id = ? AND subject_id = ?");
+        $stmt->bind_param('ii', $user_id, $subject_id);
         $stmt->execute();
+        $stmt->store_result();
+
+        if ($stmt->num_rows > 0) {
+            // Update existing marks
+            $stmt = $connect->prepare(
+                "UPDATE subject_marks 
+                 SET ca1_marks = ?, ca2_marks = ?, ut1_marks = ?, term_test_marks = ?, project_marks = ?, total_marks = ? 
+                 WHERE user_id = ? AND subject_id = ?"
+            );
+            $stmt->bind_param('iiiiiiii', $ca1, $ca2, $ut1, $term_test, $project, $total, $user_id, $subject_id);
+        } else {
+            // Insert new marks
+            $stmt = $connect->prepare(
+                "INSERT INTO subject_marks (user_id, subject_id, ca1_marks, ca2_marks, ut1_marks, term_test_marks, project_marks, total_marks) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            );
+            $stmt->bind_param('iiiiiiii', $user_id, $subject_id, $ca1, $ca2, $ut1, $term_test, $project, $total);
+        }
+
+        $stmt->execute();
+        $stmt->close();
     }
 
     set_message('Marks have been saved successfully!');
-    header('Location: subject_file.php');
+    header("Location: subject_file.php?subject_id=" . $subject_id);
     die();
 }
 
-// Fetch subjects with test availability
+// Fetch subjects
 $result_subjects = $connect->query("SELECT id, subject_name, ca1, ca2, ut1, term_test, project FROM subjects");
 
 // Fetch users (excluding admins)
 $result_users = $connect->query("SELECT id, username FROM users WHERE role != 'admin'");
+
+// Fetch existing marks if a subject is selected
+$existing_marks = [];
+if (isset($_GET['subject_id'])) {
+    $selected_subject_id = $_GET['subject_id'];
+    $marks_query = $connect->prepare("SELECT * FROM subject_marks WHERE subject_id = ?");
+    $marks_query->bind_param('i', $selected_subject_id);
+    $marks_query->execute();
+    $marks_result = $marks_query->get_result();
+    while ($row = $marks_result->fetch_assoc()) {
+        $existing_marks[$row['user_id']] = $row;
+    }
+    $marks_query->close();
+}
 ?>
 
 <!DOCTYPE html>
@@ -63,101 +87,73 @@ $result_users = $connect->query("SELECT id, username FROM users WHERE role != 'a
             <div class="col">
                 <h1 class="display-4">Enter Marks</h1>
             </div>
-            <!-- Moved the Upload PDF button here -->
             <div class="col text-end">
                 <a href="upload_pdf.php" class="btn btn-info">Upload PDF</a>
-            </div>
-            <div class="col text-end">
                 <a href="fetch_marks.php" class="btn btn-info">View Marks</a>
             </div>
         </div>
 
-        <form method="post" action="subject_file.php">
+        <form method="get" action="subject_file.php">
             <label for="subject_id" class="form-label">Select Subject:</label>
-            <select name="subject_id" id="subject_id" class="form-select" required>
+            <select name="subject_id" id="subject_id" class="form-select" required onchange="this.form.submit()">
                 <option value="" disabled selected>Select a subject</option>
                 <?php
                 $subjects = [];
                 while ($subject = $result_subjects->fetch_assoc()) {
                     $subjects[$subject['id']] = $subject;
-                    echo '<option value="' . $subject['id'] . '">' . htmlspecialchars($subject['subject_name']) . '</option>';
+                    $selected = (isset($_GET['subject_id']) && $_GET['subject_id'] == $subject['id']) ? "selected" : "";
+                    echo '<option value="' . $subject['id'] . '" ' . $selected . '>' . htmlspecialchars($subject['subject_name']) . '</option>';
                 }
                 ?>
             </select>
-
-            <table class="table table-bordered mt-3">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th class="ca1-column">CA1</th>
-                        <th class="ca2-column">CA2</th>
-                        <th class="ut1-column">UT1</th>
-                        <th class="term-test-column">Term Test</th>
-                        <th class="project-column">Project</th>
-                        <th>Total Marks</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while ($user = $result_users->fetch_assoc()) { ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($user['username']); ?></td>
-                            <td class="ca1-column"><input type="number" name="marks[<?php echo $user['id']; ?>][ca1]"
-                                    class="form-control mark-input" min="0" max="100"></td>
-                            <td class="ca2-column"><input type="number" name="marks[<?php echo $user['id']; ?>][ca2]"
-                                    class="form-control mark-input" min="0" max="100"></td>
-                            <td class="ut1-column"><input type="number" name="marks[<?php echo $user['id']; ?>][ut1]"
-                                    class="form-control mark-input" min="0" max="100"></td>
-                            <td class="term-test-column"><input type="number"
-                                    name="marks[<?php echo $user['id']; ?>][term_test]" class="form-control mark-input"
-                                    min="0" max="100"></td>
-                            <td class="project-column"><input type="number"
-                                    name="marks[<?php echo $user['id']; ?>][project]" class="form-control mark-input"
-                                    min="0" max="100"></td>
-                            <td><input type="number" class="form-control total-mark" readonly></td>
-                        </tr>
-                    <?php } ?>
-                </tbody>
-            </table>
-
-            <button type="submit" class="btn btn-primary mt-3">Submit Marks</button>
         </form>
+
+        <?php if (isset($_GET['subject_id'])) { ?>
+            <form method="post" action="subject_file.php">
+                <input type="hidden" name="subject_id" value="<?php echo $_GET['subject_id']; ?>">
+
+                <table class="table table-bordered mt-3">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>CA1</th>
+                            <th>CA2</th>
+                            <th>UT1</th>
+                            <th>Term Test</th>
+                            <th>Project</th>
+                            <th>Total Marks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($user = $result_users->fetch_assoc()) { ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($user['username']); ?></td>
+                                <td><input type="number" name="marks[<?php echo $user['id']; ?>][ca1]"
+                                        class="form-control mark-input" min="0" max="100"
+                                        value="<?php echo $existing_marks[$user['id']]['ca1_marks'] ?? ''; ?>"></td>
+                                <td><input type="number" name="marks[<?php echo $user['id']; ?>][ca2]"
+                                        class="form-control mark-input" min="0" max="100"
+                                        value="<?php echo $existing_marks[$user['id']]['ca2_marks'] ?? ''; ?>"></td>
+                                <td><input type="number" name="marks[<?php echo $user['id']; ?>][ut1]"
+                                        class="form-control mark-input" min="0" max="100"
+                                        value="<?php echo $existing_marks[$user['id']]['ut1_marks'] ?? ''; ?>"></td>
+                                <td><input type="number" name="marks[<?php echo $user['id']; ?>][term_test]"
+                                        class="form-control mark-input" min="0" max="100"
+                                        value="<?php echo $existing_marks[$user['id']]['term_test_marks'] ?? ''; ?>"></td>
+                                <td><input type="number" name="marks[<?php echo $user['id']; ?>][project]"
+                                        class="form-control mark-input" min="0" max="100"
+                                        value="<?php echo $existing_marks[$user['id']]['project_marks'] ?? ''; ?>"></td>
+                                <td><input type="number" class="form-control total-mark" readonly
+                                        value="<?php echo $existing_marks[$user['id']]['total_marks'] ?? ''; ?>"></td>
+                            </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+
+                <button type="submit" class="btn btn-primary mt-3">Submit Marks</button>
+            </form>
+        <?php } ?>
     </div>
-
-    <script>
-        const subjectsData = <?php echo json_encode($subjects); ?>;
-
-        document.getElementById('subject_id').addEventListener('change', function () {
-            const subjectId = this.value;
-            const selectedSubject = subjectsData[subjectId];
-
-            document.querySelectorAll('.ca1-column, .ca2-column, .ut1-column, .term-test-column, .project-column')
-                .forEach(el => el.style.display = 'none');
-
-            if (selectedSubject.ca1 == 1) document.querySelectorAll('.ca1-column').forEach(el => el.style.display = 'table-cell');
-            if (selectedSubject.ca2 == 1) document.querySelectorAll('.ca2-column').forEach(el => el.style.display = 'table-cell');
-            if (selectedSubject.ut1 == 1) document.querySelectorAll('.ut1-column').forEach(el => el.style.display = 'table-cell');
-            if (selectedSubject.term_test == 1) document.querySelectorAll('.term-test-column').forEach(el => el.style.display = 'table-cell');
-            if (selectedSubject.project == 1) document.querySelectorAll('.project-column').forEach(el => el.style.display = 'table-cell');
-        });
-
-        document.getElementById('subject_id').dispatchEvent(new Event('change'));
-
-        document.querySelectorAll('.mark-input').forEach(input => {
-            input.addEventListener('input', function () {
-                const row = this.closest('tr');
-                const inputs = row.querySelectorAll('.mark-input');
-                let total = 0;
-
-                inputs.forEach(field => {
-                    if (field.offsetParent !== null) {
-                        total += parseInt(field.value) || 0;
-                    }
-                });
-
-                row.querySelector('.total-mark').value = total;
-            });
-        });
-    </script>
 </body>
 
 </html>
