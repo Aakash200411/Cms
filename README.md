@@ -1,19 +1,37 @@
-Content Management System (CMS)
+# Content Management System (CMS)
 
-This project is a Content Management System (CMS) developed using HTML, CSS, JS, SQL, PHP. It provides an easy-to-use dashboard for administrators to manage users, announcements, resources, and videos. The system is designed to streamline content management for web applications.
+This project is a **Content Management System (CMS)** developed using **HTML, CSS, JavaScript, PHP, and SQL**. It offers a user-friendly dashboard for administrators to efficiently manage users, subjects, marks, attendance, announcements, resources, and videos.  
+The system is designed to streamline and organize content for web-based applications.
 
-Features
+## Features
 
-1. User Management
-Admin can create, edit, and delete user accounts.
-Role-based access control (Admin and Regular Users).
+### 1. User Management
+- Create, edit, and delete user accounts.
+- Implement role-based access control: **Admin** and **Regular Users**.
 
-2. Subject Management
-Admin can add and manage subjects.
+### 2. Subject Management
+- Admins can add, edit, and manage academic subjects.
 
-3. Marks Management
-Admin can enter and manage marks for each subject.
-Users can view their marks.
+### 3. Marks Management
+- Admins can enter and manage student marks for each subject.
+- Users can log in and view their marks across different tests and subjects.
 
-4. Attendance Management
-Admin can record attendance for users in different subjects.
+### 4. Attendance Management
+- Admins can record and manage user attendance for each subject.
+- Users can view their attendance records.
+
+### 5. Announcement & Resource Management
+- Admins can post announcements for all users.
+- Upload and manage learning resources and videos.
+
+## Technologies Used
+- **Frontend**: HTML5, CSS3, JavaScript
+- **Backend**: PHP (Core PHP)
+- **Database**: MySQL
+- **Server**: XAMPP
+
+## Future Improvements (Optional)
+- Adding notification system
+- Implementing password reset functionality
+- Responsive mobile-first design improvements
+- Advanced analytics for marks and attendance
